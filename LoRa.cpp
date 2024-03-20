@@ -25,7 +25,7 @@ void lora_setup(RH_RF95 *rf95, int rst, bool lunasat){
         while (1);
     }
 
-    // Serial.println("LoRa Setup Successful!");
+     Serial.println("LoRa Setup Successful!");
 
     // Setting TX power changes the current consumption durring tranmission (23 is max)
     rf95->setTxPower(23, false);

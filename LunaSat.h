@@ -12,6 +12,8 @@
 
 #define EVENT_DATA_REQUEST 1
 
+#define EEPROM_ADDR 0x50
+
 struct package_t{
     bme_data_t bme_data;                        // 16 bytes
     adxl_data_t adxl_data;                      // 6  bytes
@@ -26,4 +28,8 @@ void print_package(package_t *package);
 
 void print_package_for_serial(package_t *package);
 
-package_t bytes_to_package(uint8_t* buf);
+void bytes_to_package(package_t *package, uint8_t* buf);
+
+void store_package(package_t *package, uint8_t page);
+
+void get_package(package_t *package, uint8_t page);

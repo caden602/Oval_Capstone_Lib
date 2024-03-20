@@ -45,37 +45,8 @@ typedef struct{
     int16_t x;          // 16 bits -> 2 bytes
     int16_t y;          // 16 bits -> 2 bytes
     int16_t z;          // 16 bits -> 2 bytes
-    uint8_t error = 1;  // 8 bits  -> 1 byte
-} adxl_data_t;          // total   -> 7 bytes
+} adxl_data_t;          // total   -> 6 bytes
 
-void adxl_setup(ADXL313 *myAdxl)
-{
-    //Wire.begin();
+void adxl_setup(ADXL313 *myAdxl);
 
-    if (!myAdxl->begin()) //Begin communication over I2C
-    {
-        Serial.println("Failed to find AXDL313");
-        while(1); 
-    }
-    Serial.println("ADXL313 Found!");
-    
-    myAdxl->measureModeOn(); // wakes up the sensor from standby and puts it into measurement mode
-}
-
-void adxl_get_data(ADXL313 *myAdxl, adxl_data_t*adxl_data)
-{
-    adxl_data->error = 1;
-    if(myAdxl->dataReady()) // check data ready interrupt, note, this clears all other int bits in INT_SOURCE reg
-    {
-        myAdxl->readAccel(); // read all 3 axis, they are stored in class variables: myAdxl.x, myAdxl.y and myAdxl.z
-        adxl_data->x = myAdxl->x;
-        adxl_data->y = myAdxl->y;
-        adxl_data->z = myAdxl->z;
-
-        // set error bit to 0 (false)
-        adxl_data->error = 0;
-    }
-
-
-
-}
+bool adxl_get_data(ADXL313 *myAdxl, adxl_data_t*adxl_data);
