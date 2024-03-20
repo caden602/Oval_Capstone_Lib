@@ -35,12 +35,12 @@ void bme_setup(Adafruit_BME680 *bme) {
 bool bme_get_data(Adafruit_BME680 *bme, bme_data_t *bme_data) {
     // Perform Reading and check for error
     if (! bme->performReading()) {
-        return false;
+        return true;
     }
     bme_data->temperature = bme->temperature;
     bme_data->pressure = bme->pressure / 100.0;
     bme_data->humidity = bme->humidity;
     bme_data->gas_resistance = bme->gas_resistance / 1000.0;
     
-    return true;
+    return false;
 }

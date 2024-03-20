@@ -2,8 +2,8 @@
 
 void print_package(package_t *package){
     Serial.println("BME DATA: ");
-    Serial.print("Humi: "); Serial.print(package->bme_data.humidity);
-    Serial.print("Gas Res: "); Serial.print(package->bme_data.gas_resistance);
+    Serial.print("Humi: "); Serial.println(package->bme_data.humidity);
+    Serial.print("Gas Res: "); Serial.println(package->bme_data.gas_resistance);
     Serial.print("Temp: "); Serial.println(package->bme_data.temperature);
     Serial.print("Pres: "); Serial.println(package->bme_data.pressure);
 
@@ -45,7 +45,14 @@ void print_package_for_serial(package_t *package){
 
 void bytes_to_package(package_t *package, uint8_t* buf){
 
-    if(package->bme_error){
+    // Get error bits first
+    package->bme_error = (buf[28]) & 1;
+    package->adxl_error = (buf[28] >> 1) & 1;
+    package->lis3mdl_error = (buf[28] >> 2) & 1;
+
+    if(!package->bme_error){
+        // FOr some reason these bit calcultions are not working for floats, not sure why??
+        // they were working last week :/
         uint32_t temp = (buf[3] << 24) | (buf[2] << 16) | (buf[1] << 8) | buf[0];
         package->bme_data.temperature = *reinterpret_cast<float*>(&temp);
 
@@ -62,7 +69,7 @@ void bytes_to_package(package_t *package, uint8_t* buf){
         Serial.println("BME Data error!");
     }
 
-    if(package->adxl_error){
+    if(!package->adxl_error){
         int16_t x = (buf[17] << 8) | buf[16];
         package->adxl_data.x = x;
 
@@ -76,7 +83,7 @@ void bytes_to_package(package_t *package, uint8_t* buf){
         Serial.println("ADXL Data error!");
     }
 
-    if(package->lis3mdl_error){
+    if(!package->lis3mdl_error){
         int16_t x_mag = (buf[23] << 8) | buf[22];
         package->lis3mdl_data.x = x_mag;
 
@@ -90,13 +97,8 @@ void bytes_to_package(package_t *package, uint8_t* buf){
         Serial.println("LIS3MDL Data error!");
     }
 
-    package->bme_error = (buf[28]) & 1;
-    package->adxl_error = (buf[28] >> 1) & 1;
-    package->lis3mdl_error = (buf[28] >> 2) & 1;
-
     unsigned long time = 0;
     time = (buf[32] << 24) | (buf[31] << 16) | (buf[30] << 8) | buf[29];
-    time |= (buf[36] << 56) | (buf[35] << 48) | (buf[34] << 40) | (buf[33] << 32);
     package->time_stamp = time;
 
 }
@@ -108,10 +110,7 @@ void store_package(package_t *package, uint8_t page){
     uint8_t address_low = address;
 
     // Convert package to bytes
-    uint8_t* package_bytes = reinterpret_cast<uint8_t*>(&package);
-
-    // Initialize I2C communication as MASTER
-    Wire.begin();
+    uint8_t* package_bytes = reinterpret_cast<uint8_t*>(package);
 
     // Start I2C transmission
     Wire.beginTransmission(EEPROM_ADDR);
@@ -120,14 +119,14 @@ void store_package(package_t *package, uint8_t page){
     Wire.write(address_high);
     Wire.write(address_low);
 
-    Serial.println(sizeof(*package));
-    Serial.print("IN DATA: ");
-    for(int i=0; i < sizeof(*package); i++){
+    // Serial.println(sizeof(*package));
+    // Serial.print("IN DATA: ");
+    for(int i=0; i < PACKAGE_SIZE; i++){
         Wire.write(package_bytes[i]);
-        Serial.print(package_bytes[i], HEX);
-        Serial.print(' ');
+        // Serial.print(package_bytes[i], HEX);
+        // Serial.print(' ');
     }
-    Serial.println();
+    // Serial.println();
 
     // End I2C transmission
     Wire.endTransmission();
@@ -137,6 +136,7 @@ void store_package(package_t *package, uint8_t page){
 void get_package(package_t *package, uint8_t page){
 
     uint8_t raw_bytes[PACKAGE_SIZE];
+    uint8_t i = 0;
 
     // Calculate the page number in bytes
     uint16_t address = page << 7;
@@ -156,23 +156,16 @@ void get_package(package_t *package, uint8_t page){
     // Request bytes of data equal to size of package
     Wire.requestFrom(EEPROM_ADDR, PACKAGE_SIZE);
 
-    Serial.print("OUT DATA:");
-    uint8_t i = 0;
+    // Serial.print("OUT DATA:");
     while(Wire.available() > 0)
     {
         // Read into raw bytes array
         raw_bytes[i] = Wire.read();
+        // Serial.print(raw_bytes[i], HEX);
+        // Serial.print(' ');
         i++;
-
-        /*
-        Serial.print("Input data : ");
-        Serial.println(raw_bytes[i]);
-        */
-
-        Serial.print(raw_bytes[i], HEX);
-        Serial.print(' ');
     }
-    Serial.println();
+    // Serial.println();
 
     bytes_to_package(package, raw_bytes);
  

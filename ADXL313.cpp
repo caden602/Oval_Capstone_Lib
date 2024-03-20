@@ -62,7 +62,7 @@ bool adxl_get_data(ADXL313 *myAdxl, adxl_data_t*adxl_data)
     adxl_data->z = myAdxl->z;
 
     // set error bit to 0 (false)
-    return true;
+    return false;
   }
-  return false;
+  return true;
 }

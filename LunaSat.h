@@ -21,8 +21,8 @@ struct package_t{
     uint8_t bme_error : 1;                      // 1  byte
     uint8_t adxl_error : 1;
     uint8_t lis3mdl_error : 1;
-    unsigned long time_stamp;                   // 8  bytes
-};                                     // total = 37 bytes
+    unsigned long time_stamp;                   // 4  bytes
+};                                     // total = 33 bytes
 
 void print_package(package_t *package);
 

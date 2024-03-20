@@ -91,5 +91,5 @@ bool lis3mdl_get_data(Adafruit_LIS3MDL *lis3mdl, lis3mdl_data_t* lis3mdl_data) {
   lis3mdl_data->x = lis3mdl->x;
   lis3mdl_data->y = lis3mdl->y;
   lis3mdl_data->z = lis3mdl->z;
-  return true;
+  return false;
 }
