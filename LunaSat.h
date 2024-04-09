@@ -6,9 +6,9 @@
 #include <LIS3MDL.h>
 #include <LoRa.h>
 
-#define LUNA_SAT_ID 1
+#define LUNA_SAT_ID 2
 
-#define PACKAGE_SIZE    37
+#define PACKAGE_SIZE    33
 
 #define EVENT_DATA_REQUEST 1
 
@@ -24,9 +24,18 @@ struct package_t{
     unsigned long time_stamp;                   // 4  bytes
 };                                     // total = 33 bytes
 
+struct package_header_t{
+    uint16_t num_packages;
+    unsigned long current_time;
+};
+
+void sample_data(package_t *package, Adafruit_BME680* bme, ADXL313* adxl, Adafruit_LIS3MDL* lis3mdl);
+
 void print_package(package_t *package);
 
 void print_package_for_serial(package_t *package);
+
+void bytes_to_header(package_header_t *header, uint8_t* buf);
 
 void bytes_to_package(package_t *package, uint8_t* buf);
 

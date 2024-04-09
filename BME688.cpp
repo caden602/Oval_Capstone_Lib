@@ -17,11 +17,22 @@
 
 #include <BME688.h>
 
-void bme_setup(Adafruit_BME680 *bme) {
-  if (!bme->begin()) {
-    Serial.println("Failed to find BME688");
-    while (1);
+void bme_setup(Adafruit_BME680 *bme, uint8_t pcb) {
+  //*
+  if(pcb){
+    if (!bme->begin(0x76)) {
+      Serial.println("Failed to find BME688 on pcb");
+      while (1);
+    }
   }
+  else{
+    if (!bme->begin(0x77)) {
+      Serial.println("Failed to find BME688");
+      while (1);
+    }
+  }
+  //*/
+
   Serial.println("BME688 Found!");
 
   // Set up oversampling and filter initialization
