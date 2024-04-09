@@ -42,3 +42,42 @@ void bytes_to_package(package_t *package, uint8_t* buf);
 void store_package(package_t *package, uint8_t page);
 
 void get_package(package_t *package, uint8_t page);
+
+
+// ======================= DYNAMIC PACKAGES ============================
+
+
+struct d_header_pack_t {  // 10 bytes
+    uint16_t bme_n;
+    uint16_t adxl_n;
+    uint16_t lis3mdl_n;
+    unsigned long local_time_stamp;
+};
+
+struct d_bme_pack_t {   // 20 bytes
+    bme_data_t bme_data;
+    unsigned long time_stamp;
+};
+
+struct d_adxl_pack_t {  // 10 bytes
+    adxl_data_t adxl_data;
+    unsigned long time_stamp;
+};
+
+struct d_lis_pack_t {   // 10 bytes
+    lis3mdl_data_t lis3mdl_data;
+    unsigned long time_stamp;
+};
+
+
+/* 
+Logic flow:
+First messagge is to determine number of packages per sensor
+    Contains number of packages
+    and current time on LSAT
+
+Future messages are packages of different sizes:
+    package size = single pack size times number of packages 
+    number of packages = package size divided by max pack size (128 bytes)
+        Leftower data will have a smaller pack size which should be calculated as well
+*/
