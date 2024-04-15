@@ -18,4 +18,6 @@ typedef struct{
 
 void lis3mdl_setup(Adafruit_LIS3MDL *lis3mdl);
 
+void lis3mdl_set_data_rate(Adafruit_LIS3MDL *lis3mdl, double rate);
+
 bool lis3mdl_get_data(Adafruit_LIS3MDL *lis3mdl, lis3mdl_data_t* lis3mdl_data);

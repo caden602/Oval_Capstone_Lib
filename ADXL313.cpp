@@ -50,6 +50,11 @@ void adxl_setup(ADXL313 *myAdxl)
     Serial.println("ADXL313 Found!");
     
     myAdxl->measureModeOn(); // wakes up the sensor from standby and puts it into measurement mode
+    delay(500);
+}
+
+void adxl_set_data_rate(ADXL313 *adxl, double rate){
+    adxl->setRate(rate);
 }
 
 bool adxl_get_data(ADXL313 *myAdxl, adxl_data_t*adxl_data)

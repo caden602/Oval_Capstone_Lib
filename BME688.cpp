@@ -17,6 +17,8 @@
 
 #include <BME688.h>
 
+unsigned long last_bme_sample;
+
 void bme_setup(Adafruit_BME680 *bme, uint8_t pcb) {
   //*
   if(pcb){
@@ -41,17 +43,31 @@ void bme_setup(Adafruit_BME680 *bme, uint8_t pcb) {
   bme->setPressureOversampling(BME680_OS_4X);
   bme->setIIRFilterSize(BME680_FILTER_SIZE_3);
   bme->setGasHeater(320, 150); // 320*C for 150 ms
+
+  delay(500);
+
+  last_bme_sample = 0;
 }
 
-bool bme_get_data(Adafruit_BME680 *bme, bme_data_t *bme_data) {
-    // Perform Reading and check for error
-    if (! bme->performReading()) {
-        return true;
+void bme_get_data(Adafruit_BME680 *bme) {
+  // Perform Reading and check for error
+
+  bme_data_t bme_data;
+
+  if(millis() - last_bme_sample >= 1000){
+    if (bme->performReading()) {
+      
+      // set bme data
+      bme_data.temperature = bme->temperature;
+      bme_data.pressure = bme->pressure / 100.0;
+      bme_data.humidity = bme->humidity;
+      bme_data.gas_resistance = bme->gas_resistance / 1000.0;
+
+      // Get time for last sample
+      last_bme_sample = millis();
+
+      // store in eeprom
+      
     }
-    bme_data->temperature = bme->temperature;
-    bme_data->pressure = bme->pressure / 100.0;
-    bme_data->humidity = bme->humidity;
-    bme_data->gas_resistance = bme->gas_resistance / 1000.0;
-    
-    return false;
+  }
 }

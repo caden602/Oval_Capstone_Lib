@@ -30,6 +30,55 @@ void lis3mdl_setup(Adafruit_LIS3MDL *lis3mdl) {
                           true, // polarity
                           false, // don't latch
                           true); // enabled!
+
+  delay(500);
+}
+
+void lis3mdl_set_data_rate(Adafruit_LIS3MDL *lis3mdl, double rate){
+  lis3mdl_dataRate_t _rate;
+  
+  if(rate < 1.25){
+    _rate = LIS3MDL_DATARATE_0_625_HZ;
+  }
+  else if(rate < 2.5){
+    _rate = LIS3MDL_DATARATE_1_25_HZ;
+  }
+  else if(rate < 5){
+    _rate = LIS3MDL_DATARATE_2_5_HZ;
+  }
+  else if(rate < 10){
+    _rate = LIS3MDL_DATARATE_5_HZ;
+  }
+  else if(rate < 20){
+    _rate = LIS3MDL_DATARATE_10_HZ;
+  }
+  else if(rate < 40){
+    _rate = LIS3MDL_DATARATE_20_HZ;
+  }
+  else if(rate < 80){
+    _rate = LIS3MDL_DATARATE_40_HZ;
+  }
+  else if(rate < 155){
+    _rate = LIS3MDL_DATARATE_80_HZ;
+  }
+  else if(rate < 300){
+    _rate = LIS3MDL_DATARATE_155_HZ;
+  }
+  else if(rate < 560){
+    _rate = LIS3MDL_DATARATE_300_HZ;
+  }
+  else if(rate < 1000){
+    _rate = LIS3MDL_DATARATE_560_HZ;
+  }
+  else{
+    _rate = LIS3MDL_DATARATE_1000_HZ;
+  }
+
+  Serial.print("Sample Rate: ");
+  Serial.println(_rate, HEX);
+
+
+  lis3mdl->setDataRate(_rate);
 }
 
 bool lis3mdl_get_data(Adafruit_LIS3MDL *lis3mdl, lis3mdl_data_t* lis3mdl_data) {

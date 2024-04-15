@@ -30,4 +30,8 @@ void lora_setup(RH_RF95 *rf95, int rst, bool lunasat){
     // Setting TX power changes the current consumption durring tranmission (23 is max)
     rf95->setTxPower(6, false);
 
+    if(lunasat){
+        rf95->setModeRx();
+    }
+
 }

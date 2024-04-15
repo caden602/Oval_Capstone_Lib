@@ -1,28 +1,20 @@
 #include <LunaSat.h>
 
-void sample_data(package_t *package, Adafruit_BME680* bme, ADXL313* adxl, Adafruit_LIS3MDL* lis3mdl){
-    bme_data_t bme_data;
-    adxl_data_t adxl_data;
-    lis3mdl_data_t lis3mdl_data;
+unsigned long last_bme_sample;
+unsigned long last_adxl_sample;
+unsigned long last_lis_sample;
 
-    // Get sensor data
-    // Serial.println("Sampling BME688");
-    bool bme_error = bme_get_data(bme, &bme_data);
-    package->bme_data = bme_data;
-    package->bme_error = bme_error;
+int bme_page_start;
+int adxl_page_start;
+int lis_page_start;
 
-    // Serial.println("Sampling ADXL313");
-    bool adxl_error = adxl_get_data(adxl, &adxl_data);
-    package->adxl_data = adxl_data;
-    package->adxl_error = adxl_error;
+int bme_offset;
+int adxl_offset;
+int lis_offset;
 
-    // Serial.println("Sampling LIS3MDL");
-    bool lis3mdl_error = lis3mdl_get_data(lis3mdl, &lis3mdl_data);
-    package->lis3mdl_data = lis3mdl_data;
-    package->lis3mdl_error = lis3mdl_error;
-
-    package->time_stamp = millis();
-}
+int bme_cur_page;
+int adxl_cur_page;
+int lis_cur_page;
 
 
 void print_package(package_t *package){
@@ -153,16 +145,18 @@ void store_package(package_t *package, uint8_t page){
     uint8_t chunk_size = 24; // Need to send in chunk sizes < 30;
 
     uint8_t num_chunks = PACKAGE_SIZE / chunk_size;
+    Serial.println(PACKAGE_SIZE);
     // uint8_t left_over_chunks = PACKAGE_SIZE % chunk_size;
 
     // Calculate the page number in bytes
-    uint16_t address = page << 7;
+    uint16_t address = uint16_t(page) << 7;
     uint8_t address_high = address >> 8;
     uint8_t address_low = address;
 
     // Convert package to bytes
     uint8_t* package_bytes = reinterpret_cast<uint8_t*>(package);
 
+    Serial.print("IN DATA:  ");
     // Iterate through number of chunks we need to store
     for(uint8_t i = 0; i < num_chunks; i++){
         // Start I2C transmission
@@ -173,10 +167,9 @@ void store_package(package_t *package, uint8_t page){
         Wire.write(address_low + (i * chunk_size));
 
         // Serial.println(sizeof(*package));
-        // Serial.print("IN DATA: ");
-        for(int i=0; i < chunk_size; i++){
-            Wire.write(package_bytes[i]);
-            // Serial.print(package_bytes[i], HEX);
+        for(int j = chunk_size*i; j < chunk_size*(i+1); j++){
+            Wire.write(package_bytes[j]);
+            Serial.print(package_bytes[j], HEX);
             // Serial.print(' ');
         }
         // End I2C transmission
@@ -196,10 +189,10 @@ void store_package(package_t *package, uint8_t page){
 
     for(int i=chunk_size*num_chunks; i < PACKAGE_SIZE; i++){
         Wire.write(package_bytes[i]);
-        // Serial.print(package_bytes[i], HEX);
-        // Serial.print(' ');
+        Serial.print(package_bytes[i], HEX);
+        Serial.print(' ');
     }
-    // Serial.println();
+    Serial.println();
 
     // End I2C transmission
     Wire.endTransmission();
@@ -214,12 +207,14 @@ void get_package(package_t *package, uint8_t page){
     uint8_t chunk_size = 24;
     uint8_t num_chunks = PACKAGE_SIZE / chunk_size;
     uint8_t i;
+    uint8_t j = 0;
 
     // Calculate the page number in bytes
     uint16_t address = page << 7;
     uint8_t address_high = address >> 8;
     uint8_t address_low = address;
 
+    Serial.print("OUT DATA: ");
     for(i = 0; i < num_chunks; i++){
         // Start I2C transmission
         Wire.beginTransmission(EEPROM_ADDR);
@@ -234,13 +229,12 @@ void get_package(package_t *package, uint8_t page){
         // Request bytes of data in chunks of 24 (32 is max, but get errors > 30)
         Wire.requestFrom(EEPROM_ADDR, chunk_size);
 
-        // Serial.print("OUT DATA:");
         while(Wire.available() > 0){
             // Read into raw bytes array
-            raw_bytes[i] = Wire.read();
-            // Serial.print(raw_bytes[i], HEX);
+            raw_bytes[j] = Wire.read();
+            Serial.print(raw_bytes[j], HEX);
             // Serial.print(' ');
-            i++;
+            j++;
         }
         delay(50);
     }
@@ -261,16 +255,210 @@ void get_package(package_t *package, uint8_t page){
     while(Wire.available() > 0)
     {
         // Read into raw bytes array
-        raw_bytes[i] = Wire.read();
-        // Serial.print(raw_bytes[i], HEX);
+        raw_bytes[j] = Wire.read();
+        Serial.print(raw_bytes[j], HEX);
         // Serial.print(' ');
-        i++;
+        j++;
     }
 
-    // Serial.println();\
+    Serial.println();
 
     bytes_to_package(package, raw_bytes);
 
     delay(50);
  
+}
+
+uint16_t eeprom_get_address(uint16_t page, uint8_t offset){
+    // page should be < 512
+    if(page < 512 && offset < 128){
+        return page << 7 | offset;
+    }
+    return -1;
+}
+
+void eeprom_store_bytes(uint8_t *bytes, uint8_t size, uint16_t address){
+    uint8_t chunk_size = 24; // Need to send in chunk sizes < 30;
+
+    uint8_t num_chunks = size / chunk_size;
+    Serial.println(size);
+
+    // Calculate the page number in bytes
+    uint8_t address_high = address >> 8;
+    uint8_t address_low = address;
+
+    Serial.print("IN DATA:  ");
+    // Iterate through number of chunks we need to store
+    for(uint8_t i = 0; i < num_chunks; i++){
+        // Start I2C transmission
+        Wire.beginTransmission(EEPROM_ADDR);
+
+        // Select write address register
+        Wire.write(address_high);
+        Wire.write(address_low + (i * chunk_size));
+
+        // Send the number of bytes in each chunk
+        for(int j = chunk_size*i; j < chunk_size*(i+1); j++){
+            Wire.write(bytes[j]);
+            Serial.print(bytes[j], HEX);
+            // Serial.print(' ');
+        }
+        // End I2C transmission
+        Wire.endTransmission();
+
+        // Delay before reconnecting to I2C line
+        delay(300);
+    }
+
+    // Send the remaining bytes 
+
+    // Start I2C transmission
+    Wire.beginTransmission(EEPROM_ADDR);
+
+    // Select write address register
+    Wire.write(address_high);
+    Wire.write(address_low+(chunk_size * num_chunks));
+
+    // Send the remaining bytes
+    for(int i=chunk_size*num_chunks; i < size; i++){
+        Wire.write(bytes[i]);
+        Serial.print(bytes[i], HEX);
+        // Serial.print(' ');
+    }
+    Serial.println();
+
+    // End I2C transmission
+    Wire.endTransmission();
+
+    delay(300);
+}
+
+void eeprom_get_bytes(uint8_t *bytes, uint8_t size, uint16_t address){
+
+    uint8_t chunk_size = 24;
+    uint8_t num_chunks = size / chunk_size;
+    uint8_t i;
+    uint8_t j = 0;
+
+    // Calculate the page number in bytes
+    uint8_t address_high = address >> 8;
+    uint8_t address_low = address;
+
+    Serial.print("OUT DATA: ");
+    for(i = 0; i < num_chunks; i++){
+        // Start I2C transmission
+        Wire.beginTransmission(EEPROM_ADDR);
+
+        // Select write address register
+        Wire.write(address_high);
+        Wire.write(address_low + (i * chunk_size));
+
+        // End I2C transmission
+        Wire.endTransmission();
+
+        // Request bytes of data in chunks of 24 (32 is max, but get errors > 30)
+        Wire.requestFrom(EEPROM_ADDR, chunk_size);
+
+        while(Wire.available() > 0){
+            // Read into raw bytes array
+            bytes[j] = Wire.read();
+            Serial.print(bytes[j], HEX);
+            // Serial.print(' ');
+            j++;
+        }
+        delay(50);
+    }
+
+    // Start I2C transmission
+    Wire.beginTransmission(EEPROM_ADDR);
+
+    // Select write address register, offset by chunk_size
+    Wire.write(address_high);
+    Wire.write(address_low + (num_chunks * chunk_size));
+
+    // End I2C transmission
+    Wire.endTransmission();
+
+    // Request bytes of data equal to size of package
+    Wire.requestFrom(EEPROM_ADDR, PACKAGE_SIZE-(chunk_size * num_chunks));
+
+    while(Wire.available() > 0)
+    {
+        // Read into raw bytes array
+        bytes[j] = Wire.read();
+        Serial.print(bytes[j], HEX);
+        // Serial.print(' ');
+        j++;
+    }
+
+    Serial.println();
+
+    delay(50);
+ 
+}
+
+void bme_setup(Adafruit_BME680 *bme) {
+    if(!bme->begin(0x76)){
+        Serial.println("Failed to find BME688");
+        while(1);
+    }
+    Serial.println("BME688 Found!");
+
+    // Set up oversampling and filter initialization
+    bme->setTemperatureOversampling(BME680_OS_8X);
+    bme->setHumidityOversampling(BME680_OS_2X);
+    bme->setPressureOversampling(BME680_OS_4X);
+    bme->setIIRFilterSize(BME680_FILTER_SIZE_3);
+    bme->setGasHeater(320, 150); // 320*C for 150 ms
+
+    delay(500);
+
+    last_bme_sample = 0;
+}
+
+void bme_get_data(Adafruit_BME680 *bme) {
+    // Sample the BME every 1 second
+    bme_data_t bme_data;
+
+    // Check if enough time has elapsed since our last sample
+    if(millis() - last_bme_sample >= 1000){
+        // Ensure reading was performed successfully
+        if(bme->performReading()) {
+            
+            // Set bme data
+            bme_data.temperature = bme->temperature;
+            bme_data.pressure = bme->pressure / 100.0;
+            bme_data.humidity = bme->humidity;
+            bme_data.gas_resistance = bme->gas_resistance / 1000.0;
+
+            // Set time for last sample
+            last_bme_sample = millis();
+
+            // Check here if BME page is overflowing into next sensors 
+            if(bme_cur_page >= adxl_page_start){
+                // could also set some global variable that says stop reading this sensor to save power
+                return;
+            }
+
+            // Get address to store data
+            uint16_t address = eeprom_get_address(bme_cur_page, bme_offset);
+
+            // Convert data to bytes
+            uint8_t *bytes = reinterpret_cast<uint8_t*>(&bme_data);
+
+            // Store data bytes in eeprom at address
+            eeprom_store_bytes(bytes, sizeof(bme_data), address);
+
+            // if the next bme_data package will overflow the page
+            if(bme_offset + sizeof(bme_data) > 128){
+                // iterate the bme page and set offset back to zero
+                bme_cur_page += 1;
+                bme_offset = 0;
+            }
+            // Otherwise, iterate the offset
+            else{
+                bme_offset += sizeof(bme_data);
+            }
+        }
+    }
 }
