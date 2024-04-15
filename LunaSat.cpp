@@ -261,6 +261,7 @@ void get_package(package_t *package, uint8_t page){
         j++;
     }
 
+    // Serial.println();
     Serial.println();
 
     bytes_to_package(package, raw_bytes);
@@ -268,6 +269,24 @@ void get_package(package_t *package, uint8_t page){
     delay(50);
  
 }
+
+// ======================= DYNAMIC PACKAGES ============================
+
+void map_eprom(uint16_t bme_f, uint16_t adxl_f, uint16_t lis_f) {
+    uint16_t tot = bme_f * 2 + adxl_f * 1 + lis_f * 1;
+
+    uint16_t bme_r = bme_f * 2 / tot;
+    uint16_t adxl_r = adxl_f / tot;
+    uint16_t lis_r = lis_f / tot;
+
+    uint8_t a1 = 512 * bme_r;
+    uint8_t a2 = 512 * adxl_r + a1;
+
+    uint8_t bme_add = 0;
+    uint8_t accel_add = a1;
+    uint8_t lis_add = a2;
+}
+
 
 uint16_t eeprom_get_address(uint16_t page, uint8_t offset){
     // page should be < 512
