@@ -53,8 +53,13 @@ struct d_lis_pack_t {   // 10 bytes
     unsigned long time_stamp;
 };
 
+// ==============================  PRINT FUNCTIONS ============================
 
+void print_bme_for_serial(d_bme_pack_t *bme_pack);
 
+void print_adxl_for_serial(d_adxl_pack_t *adxl_pack);
+
+void print_lis_for_serial(d_lis_pack_t *lis_pack);
 
 // ======================= Sensor Functions ============================
 

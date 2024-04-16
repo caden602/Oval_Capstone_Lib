@@ -7,6 +7,49 @@ unsigned long last_lis_sample;
 uint16_t lis_sample_period;
 uint16_t adxl_sample_period;
 
+// ==============================  PRINT FUNCTIONS ============================
+
+void print_bme_for_serial(d_bme_pack_t *bme_pack){
+    Serial.print("BME:");
+
+    Serial.print('T');
+    Serial.print(bme_pack->time_stamp);  Serial.print(",");
+
+    Serial.print('t');
+    Serial.print(bme_pack->bme_data.temperature);  Serial.print(",");
+    Serial.print('h');
+    Serial.print(bme_pack->bme_data.humidity);  Serial.print(",");
+    /*
+    Serial.print(bme_pack->bme_data.gas_resistance);  Serial.print(",");
+    Serial.print(bme_pack->bme_data.pressure);  Serial.print(",");
+    */
+
+    Serial.println();
+}
+
+void print_adxl_for_serial(d_adxl_pack_t *adxl_pack){
+    Serial.print("ADXL:");
+    Serial.print('T');
+    Serial.print(adxl_pack->time_stamp);  Serial.print(",");
+
+    Serial.print(adxl_pack->adxl_data.x); Serial.print(",");
+    Serial.print(adxl_pack->adxl_data.y); Serial.print(",");
+    Serial.print(adxl_pack->adxl_data.z); Serial.print(",");
+    
+    Serial.println();
+}
+
+void print_lis_for_serial(d_lis_pack_t *lis_pack){
+    Serial.print("LIS:");
+    Serial.print('T');
+    Serial.print(lis_pack->time_stamp);  Serial.print(",");
+
+    Serial.print(lis_pack->lis_data.x); Serial.print(",");
+    Serial.print(lis_pack->lis_data.y); Serial.print(",");
+    Serial.print(lis_pack->lis_data.z); Serial.print(",");
+    
+    Serial.println();
+}
 
 // ==============================  BYTE CONVERSIONS ============================
 
@@ -73,6 +116,7 @@ void bme_sample_data(Adafruit_BME680 *bme){
 
     // Check if enough time has elapsed since our last sample
     if(millis() - last_bme_sample >= 1000){
+        Serial.println("Sampling BME");
 
         // Ensure reading was performed successfully
         if(bme->performReading()) {
@@ -93,16 +137,13 @@ void bme_sample_data(Adafruit_BME680 *bme){
             };
 
             // Print data
-            Serial.print("BME Data: Time = ");
-            Serial.print(bme_pack.time_stamp);
-            Serial.print(" , Temp = : ");
-            Serial.println(bme_pack.bme_data.temperature);
+            print_bme_for_serial(&bme_pack);
 
             // Convert data to bytes
             uint8_t *bytes = reinterpret_cast<uint8_t*>(&bme_pack);
 
             // Store package in EEPROM
-            eeprom_store_data(bytes, sizeof(d_bme_pack_t), bme_t);
+            eeprom_store_data(bytes, 20U, bme_t);
         }
     }
 }
@@ -220,11 +261,14 @@ void lis_sample_data(Adafruit_LIS3MDL *lis){
             .time_stamp = last_lis_sample
         };
 
+        // Print data
+        print_lis_for_serial(&lis_pack);
+
         // Convert data to bytes
         uint8_t *bytes = reinterpret_cast<uint8_t*>(&lis_pack);
 
         // Store package in EEPROM
-        eeprom_store_data(bytes, sizeof(d_lis_pack_t), lis_t);
+        eeprom_store_data(bytes, 10U, lis_t);
     }
 }
 
@@ -275,11 +319,14 @@ void adxl_sample_data(ADXL313 *adxl){
                 .time_stamp = last_adxl_sample
             };
 
+            // Print data
+            print_adxl_for_serial(&adxl_pack);
+
             // Convert data to bytes
             uint8_t *bytes = reinterpret_cast<uint8_t*>(&adxl_pack);
 
             // Store package in EEPROM
-            eeprom_store_data(bytes, sizeof(d_adxl_pack_t), adxl_t);
+            eeprom_store_data(bytes, 10U, adxl_t);
         }
     }
 }
@@ -297,12 +344,15 @@ void send_sensor_data(RH_RF95* rf95, uint16_t samples, sensor_choice_t sens){
         case bme_t:
             size = sizeof(d_bme_pack_t);
             page_start = bme_page_start;
+            break;
         case adxl_t:
             size = sizeof(d_adxl_pack_t);
             page_start = adxl_page_start;
+            break;
         case lis_t:
             size = sizeof(d_lis_pack_t);
             page_start = lis_page_start;
+            break;
     }
 
     uint8_t samples_per_page = 128 / size;
@@ -362,16 +412,16 @@ void send_data(RH_RF95* rf95){
 
     // Send sensor data one at a time
     send_sensor_data(rf95, header.bme_n, bme_t);
-    //send_sensor_data(rf95, header.adxl_n, adxl_t);
-    //send_sensor_data(rf95, header.lis_n, lis_t);
+    send_sensor_data(rf95, header.adxl_n, adxl_t);
+    send_sensor_data(rf95, header.lis_n, lis_t);
 
     // Reset eeprom now that everything has been sent
     eeprom_reset();
 
-    // Send stopper signifier
-    uint8_t data [] = "END OF DATA";
-    rf95->send(data, sizeof(data));
-    rf95->waitPacketSent();
+    // // Send stopper signifier
+    // uint8_t data [] = "END OF DATA";
+    // rf95->send(data, sizeof(data));
+    // rf95->waitPacketSent();
 
     // Set back to RX mode
     rf95->setModeRx();

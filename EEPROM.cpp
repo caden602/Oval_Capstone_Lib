@@ -28,7 +28,6 @@ uint16_t get_and_set_lis_count(){
 }
 
 
-
 void eeprom_map_pages(uint16_t bme_f, uint16_t adxl_f, uint16_t lis_f) {
     uint16_t tot = bme_f * 2 + adxl_f * 1 + lis_f * 1;
 
@@ -81,7 +80,10 @@ void eeprom_store_bytes(uint8_t *bytes, uint8_t size, uint16_t address){
     uint8_t address_high = address >> 8;
     uint8_t address_low = address;
 
-    Serial.print("IN DATA:  ");
+    // Serial.print("IN DATA:  ");
+    // Serial.print("@ addr ");
+    // Serial.print(address, HEX);
+    // Serial.print("  : ");
     // Iterate through number of chunks we need to store
     for(uint8_t i = 0; i < num_chunks; i++){
         // Start I2C transmission
@@ -94,8 +96,8 @@ void eeprom_store_bytes(uint8_t *bytes, uint8_t size, uint16_t address){
         // Send the number of bytes in each chunk
         for(int j = chunk_size*i; j < chunk_size*(i+1); j++){
             Wire.write(bytes[j]);
-            Serial.print(bytes[j], HEX);
-            Serial.print(' ');
+            // Serial.print(bytes[j], HEX);
+            // Serial.print(' ');
         }
         // End I2C transmission
         Wire.endTransmission();
@@ -116,8 +118,8 @@ void eeprom_store_bytes(uint8_t *bytes, uint8_t size, uint16_t address){
     // Send the remaining bytes
     for(int i=chunk_size*num_chunks; i < size; i++){
         Wire.write(bytes[i]);
-        Serial.print(bytes[i], HEX);
-        Serial.print(' ');
+        // Serial.print(bytes[i], HEX);
+        // Serial.print(' ');
     }
     Serial.println();
 
@@ -138,7 +140,10 @@ void eeprom_get_bytes(uint8_t *bytes, uint8_t size, uint16_t address){
     uint8_t address_high = address >> 8;
     uint8_t address_low = address;
 
-    Serial.print("OUT DATA: ");
+    // Serial.print("OUT DATA: ");
+    // Serial.print("@ addr ");
+    // Serial.print(address, HEX);
+    // Serial.print("  : ");
     for(i = 0; i < num_chunks; i++){
         // Start I2C transmission
         Wire.beginTransmission(EEPROM_ADDR);
@@ -156,8 +161,8 @@ void eeprom_get_bytes(uint8_t *bytes, uint8_t size, uint16_t address){
         while(Wire.available() > 0){
             // Read into raw bytes array
             bytes[j] = Wire.read();
-            Serial.print(bytes[j], HEX);
-            Serial.print(' ');
+            // Serial.print(bytes[j], HEX);
+            // Serial.print(' ');
             j++;
         }
         delay(50);
@@ -180,12 +185,12 @@ void eeprom_get_bytes(uint8_t *bytes, uint8_t size, uint16_t address){
     {
         // Read into raw bytes array
         bytes[j] = Wire.read();
-        Serial.print(bytes[j], HEX);
-        Serial.print(' ');
+        // Serial.print(bytes[j], HEX);
+        // Serial.print(' ');
         j++;
     }
 
-    Serial.println();
+    // Serial.println();
 
     delay(50);
 }
@@ -228,7 +233,7 @@ void eeprom_store_data(uint8_t * bytes, uint8_t size, sensor_choice_t sens){
     eeprom_store_bytes(bytes, size, address);
 
     // if the next data package will overflow the page
-    if(offset + size > 128){
+    if(offset + size > 128 - size){
         // iterate the sens page and set offset back to zero
         cur_page += 1;
         offset = 0;
@@ -244,14 +249,17 @@ void eeprom_store_data(uint8_t * bytes, uint8_t size, sensor_choice_t sens){
             bme_count ++;
             bme_offset = offset;
             bme_cur_page = cur_page;
+            break;
         case adxl_t: 
             adxl_count ++;
             adxl_offset = offset;
             adxl_cur_page = cur_page;
+            break;
         case lis_t: 
             lis_count ++;
             lis_offset = offset;
             lis_cur_page = cur_page;
+            break;
     }
 }
 
@@ -271,6 +279,8 @@ void eeprom_reset(){
     lis_count = 0;
     lis_offset = 0;
     lis_cur_page = lis_page_start;
+
+    delay(50);
 }
 
 
