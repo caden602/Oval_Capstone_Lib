@@ -14,10 +14,13 @@ typedef struct{
     int16_t x;              // 16 bits -> 2 bytes
     int16_t y;              // 16 bits -> 2 bytes
     int16_t z;              // 16 bits -> 2 bytes
-} lis3mdl_data_t;           // total   -> 6 bytes
+} lis_data_t;               // total   -> 6 bytes
 
+
+/*
 void lis3mdl_setup(Adafruit_LIS3MDL *lis3mdl);
 
 void lis3mdl_set_data_rate(Adafruit_LIS3MDL *lis3mdl, double rate);
 
-bool lis3mdl_get_data(Adafruit_LIS3MDL *lis3mdl, lis3mdl_data_t* lis3mdl_data);
+bool lis3mdl_get_data(Adafruit_LIS3MDL *lis3mdl, lis_data_t* lis3mdl_data);
+*/

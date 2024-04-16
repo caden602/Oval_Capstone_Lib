@@ -4,3 +4,5 @@
 
 // LoRa Setup function, params are rf object and rst pin
 void lora_setup(RH_RF95 *rf95, int rst, bool lunasat);
+
+void lora_send_data();

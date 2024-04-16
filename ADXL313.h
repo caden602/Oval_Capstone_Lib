@@ -47,8 +47,11 @@ typedef struct{
     int16_t z;          // 16 bits -> 2 bytes
 } adxl_data_t;          // total   -> 6 bytes
 
+
+/*
 void adxl_setup(ADXL313 *myAdxl);
 
 void adxl_set_data_rate(ADXL313 *adxl, double rate);
 
 bool adxl_get_data(ADXL313 *myAdxl, adxl_data_t*adxl_data);
+*/

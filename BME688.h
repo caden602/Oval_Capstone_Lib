@@ -34,7 +34,8 @@ typedef struct{
     uint32_t gas_resistance;    // 32 bits -> 4 bytes
 }bme_data_t;                    // total   -> 16 bytes
 
-
+/*
 void bme_setup(Adafruit_BME680 *bme, uint8_t pcb);
 
 bool bme_get_data(Adafruit_BME680 *bme, bme_data_t *bme_data);
+*/

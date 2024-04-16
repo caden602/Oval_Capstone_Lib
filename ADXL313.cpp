@@ -38,36 +38,3 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ******************************************************************************/
 #include <ADXL313.h>
-
-void adxl_setup(ADXL313 *myAdxl)
-{
-
-    if (!myAdxl->begin()) //Begin communication over I2C
-    {
-        Serial.println("Failed to find AXDL313");
-        while(1); 
-    }
-    Serial.println("ADXL313 Found!");
-    
-    myAdxl->measureModeOn(); // wakes up the sensor from standby and puts it into measurement mode
-    delay(500);
-}
-
-void adxl_set_data_rate(ADXL313 *adxl, double rate){
-    adxl->setRate(rate);
-}
-
-bool adxl_get_data(ADXL313 *myAdxl, adxl_data_t*adxl_data)
-{
-  if(myAdxl->dataReady()) // check data ready interrupt, note, this clears all other int bits in INT_SOURCE reg
-  {
-    myAdxl->readAccel(); // read all 3 axis, they are stored in class variables: myAdxl.x, myAdxl.y and myAdxl.z
-    adxl_data->x = myAdxl->x;
-    adxl_data->y = myAdxl->y;
-    adxl_data->z = myAdxl->z;
-
-    // set error bit to 0 (false)
-    return false;
-  }
-  return true;
-}
